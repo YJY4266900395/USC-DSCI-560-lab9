@@ -30,6 +30,7 @@ Context Retrieval
 Local LLM (FLAN-T5)
       ↓
 Generated Answer
+
 ---
 
 # Project Structure
