@@ -39,7 +39,54 @@ pages = loader.load()
 for page in pages:
     text += page.page_content
 
-
+```
 ## 2. Text Chunking
 
 The extracted text is split into smaller chunks using:
+
+RecursiveCharacterTextSplitter
+
+File:
+
+text_chunks.py
+Parameters used:
+
+chunk size: 500 characters
+
+overlap: 50 characters
+
+Chunking allows the retrieval system to locate relevant sections more accurately.
+
+Example:
+``` python
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=500,
+    chunk_overlap=50
+)
+```
+
+## 3. Vector Database
+
+Each chunk is converted into an embedding using the model:
+
+all-MiniLM-L6-v2
+
+File:
+
+vector_store.py
+
+The embeddings are stored in a FAISS vector index for fast similarity search.
+
+Generated files:
+
+faiss_index/docs.index
+faiss_index/chunks.pkl
+
+Example:
+``` python
+model = SentenceTransformer("all-MiniLM-L6-v2")
+embeddings = model.encode(chunks)
+
+index = faiss.IndexFlatL2(dimension)
+index.add(embeddings)
+```
