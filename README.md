@@ -90,3 +90,43 @@ embeddings = model.encode(chunks)
 index = faiss.IndexFlatL2(dimension)
 index.add(embeddings)
 ```
+## 4. Retrieval
+
+When the user asks a question:
+
+The question is converted into an embedding
+
+FAISS finds the most relevant chunk
+
+The retrieved chunk is used as context for the LLM
+
+Example retrieval:
+``` python
+retrieve_top_k(question, index, chunks, embed_model, k=1)
+```
+## 5. Local Language Model
+
+The system uses a local HuggingFace model:
+
+google/flan-t5-small
+
+File:
+
+chatbot.py
+
+The model receives:
+
+retrieved context
+
+user question
+
+It then generates a summarized answer.
+
+Example:
+``` python
+pipeline(
+    "text2text-generation",
+    model="google/flan-t5-small",
+    max_new_tokens=128
+)
+```
