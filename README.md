@@ -130,3 +130,34 @@ pipeline(
     max_new_tokens=128
 )
 ```
+## 6. Chat Interface
+
+The chatbot runs in a command line interface (CLI).
+
+File:
+
+main.py
+
+Workflow:
+
+Load PDF
+
+Create or load vector index
+
+Load local LLM
+
+Start interactive question loop
+
+Example interaction:
+``` python
+Chatbot is ready. Type 'exit' to quit.
+```
+Ask a question: What is Fast Cosim?
+
+Answer:
+Fast Cosim is a feature in the Envelope controller that speeds up RF-DSP co-simulation by characterizing the RF subsystem once and reusing it during simulation.
+
+Users can exit with:
+```
+exit
+```
