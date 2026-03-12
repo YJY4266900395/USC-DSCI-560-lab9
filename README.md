@@ -1,18 +1,36 @@
-### DSCI 560 Lab 9 – Local PDF Question Answering Chatbot
+# DSCI 560 Lab 9  
+## Local PDF Question Answering Chatbot (RAG System)
 
-This project implements a local PDF-based question answering system using open-source tools.
-The chatbot allows users to ask questions about the content of a PDF document, and it retrieves relevant sections of the document to generate answers.
+This project implements a **local Retrieval-Augmented Generation (RAG) chatbot** that answers questions based on the content of a PDF document. The system extracts text from a PDF file, splits the text into chunks, stores embeddings in a FAISS vector database, and retrieves relevant information to generate answers using a local language model.
 
-The system uses:
+The chatbot runs **entirely locally without external APIs**.
 
-LangChain for PDF loading and text processing
+---
 
-SentenceTransformers for text embeddings
+# System Architecture
 
-FAISS for vector similarity search
+The system follows a typical **Retrieval-Augmented Generation pipeline**:
 
-FLAN-T5 as the local language model
+PDF Document
+      ↓
+Text Extraction
+      ↓
+Text Chunking
+      ↓
+Text Embedding
+      ↓
+Vector Database (FAISS)
+      ↓
+User Question
+      ↓
+Similarity Search
+      ↓
+Context Retrieval
+      ↓
+Local LLM (FLAN-T5)
+      ↓
+Generated Answer
+---
 
-Python CLI interface for interaction
+# Project Structure
 
-The chatbot works completely locally without external APIs.
