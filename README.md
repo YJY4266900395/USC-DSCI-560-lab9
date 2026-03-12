@@ -11,27 +11,35 @@ The chatbot runs **entirely locally without external APIs**.
 
 The system follows a typical **Retrieval-Augmented Generation pipeline**:
 
-PDF Document
-      ↓
-Text Extraction
-      ↓
-Text Chunking
-      ↓
-Text Embedding
-      ↓
-Vector Database (FAISS)
-      ↓
-User Question
-      ↓
-Similarity Search
-      ↓
-Context Retrieval
-      ↓
-Local LLM (FLAN-T5)
-      ↓
-Generated Answer
+
 
 ---
 
 # Project Structure
 
+
+---
+
+# Components
+
+## 1. PDF Text Extraction
+
+The PDF document is loaded and converted into raw text using **PyPDFLoader**.
+
+File:pdf_extraction.py
+
+This script reads each page of the PDF and concatenates the content into a single text string.
+
+Example:
+
+```python
+loader = PyPDFLoader(pdf_path)
+pages = loader.load()
+
+for page in pages:
+    text += page.page_content
+
+
+## 2. Text Chunking
+
+The extracted text is split into smaller chunks using:
