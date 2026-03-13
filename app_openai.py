@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
@@ -8,7 +9,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.messages import HumanMessage, AIMessage
-from htmlTemplates import css, bot_template, user_template
+from html_modified import css, bot_template, user_template
 
 
 def get_pdf_text(pdf_docs):
@@ -63,9 +64,40 @@ def get_conversation_chain(vectorstore):
     return chain
 
 
+def _is_intro_question(q):
+    patterns = [
+        r"introduce yourself", r"introduce the document", r"what (is|are) (this|the) (document|pdf|book)",
+        r"what document", r"summarize (this|the) (document|pdf|book)", r"what('s| is) (this|the) (document|pdf|book)",
+        r"tell me about (this|the) (document|pdf|book)", r"what did i upload", r"what is (uploaded|the uploaded)",
+    ]
+    return any(re.search(p, q.lower()) for p in patterns)
+
+
 def handle_userinput(user_question):
     if st.session_state.conversation is None:
         st.warning("Please upload and process PDF documents first!")
+        return
+
+    # For intro-style questions, bypass FAISS and use the actual first section
+    # of the document to prevent hallucinating the document title/content
+    if _is_intro_question(user_question) and st.session_state.get("doc_intro"):
+        llm = ChatOpenAI()
+        intro_prompt = (
+            "You are answering questions about a PDF document.\n"
+            "Use ONLY the provided context. Do NOT use outside knowledge. Do NOT guess.\n"
+            "If the document title or name is not explicitly stated in the context, do NOT invent one.\n"
+            "Keep the answer concise and faithful to the document.\n\n"
+            f"Context (first section of the document):\n{st.session_state.doc_intro}\n\n"
+            f"Question:\n{user_question}\n\nAnswer:"
+        )
+        response = llm.invoke([HumanMessage(content=intro_prompt)]).content
+        st.session_state.chat_history.append(user_question)
+        st.session_state.chat_history.append(response)
+        for i, msg in enumerate(st.session_state.chat_history):
+            if i % 2 == 0:
+                st.write(user_template.replace("{{MSG}}", msg), unsafe_allow_html=True)
+            else:
+                st.write(bot_template.replace("{{MSG}}", msg), unsafe_allow_html=True)
         return
 
     # Build message objects from flat chat_history list
@@ -100,6 +132,8 @@ def main():
         st.session_state.conversation = None
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
+    if "doc_intro" not in st.session_state:
+        st.session_state.doc_intro = ""
 
     st.header("Chat with PDFs :robot_face:")
     user_question = st.text_input("Ask questions about your documents:")
@@ -113,6 +147,7 @@ def main():
         if st.button("Process"):
             with st.spinner("Processing"):
                 raw_text = get_pdf_text(pdf_docs)
+                st.session_state.doc_intro = raw_text[:1500]
                 text_chunks = get_text_chunks(raw_text)
                 vectorstore = get_vectorstore(text_chunks)
                 st.session_state.conversation = get_conversation_chain(vectorstore)

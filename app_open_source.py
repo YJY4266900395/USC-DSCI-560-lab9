@@ -11,7 +11,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from langchain_community.llms import LlamaCpp
 
-from htmlTemplates import css, bot_template, user_template
+from html_modified import css, bot_template, user_template
 
 
 CACHE_DIR = "vector_cache"
@@ -337,6 +337,16 @@ def fallback_numeric_fact_answer(user_question, docs, answer_language):
     return None
 
 
+def _is_intro_question(q):
+    patterns = [
+        r"introduce yourself", r"introduce the document", r"what (is|are) (this|the) (document|pdf|book)",
+        r"what document", r"summarize (this|the) (document|pdf|book)", r"what('s| is) (this|the) (document|pdf|book)",
+        r"tell me about (this|the) (document|pdf|book)", r"what did i upload", r"what is (uploaded|the uploaded)",
+    ]
+    q_lower = q.lower()
+    return any(re.search(p, q_lower) for p in patterns)
+
+
 def answer_document_question(conversation_chain, vectorstore, user_question):
     answer_language = get_answer_language(user_question)
     final_question = (
@@ -345,6 +355,21 @@ def answer_document_question(conversation_chain, vectorstore, user_question):
 
     print("STEP R1: querying conversation chain", flush=True)
     response = conversation_chain({"question": final_question})
+
+    # For intro-style questions, override context with the actual first page of the document
+    # to prevent the LLM from hallucinating the document title/content
+    if _is_intro_question(user_question) and st.session_state.get("doc_intro"):
+        doc_intro = st.session_state.doc_intro
+        intro_prompt = (
+            "You are answering questions about a PDF document.\n"
+            "Use ONLY the provided context. Do NOT use outside knowledge. Do NOT guess.\n"
+            "If the document title or name is not explicitly stated in the context, do NOT invent one.\n"
+            "Keep the answer concise and faithful to the document.\n\n"
+            f"Context (first section of the document):\n{doc_intro}\n\n"
+            f"Question:\n{final_question}\n\nAnswer:"
+        )
+        llm = st.session_state.llm
+        response["answer"] = llm.invoke(intro_prompt)
 
     answer = response.get("answer", "").strip()
     answer = clean_answer(answer)
@@ -473,6 +498,8 @@ def main():
         st.session_state.display_history = []
     if "last_source_docs" not in st.session_state:
         st.session_state.last_source_docs = []
+    if "doc_intro" not in st.session_state:
+        st.session_state.doc_intro = ""
 
     with st.sidebar:
         st.subheader("Your documents")
@@ -504,6 +531,7 @@ def main():
                             print("STEP P3 STOP: no chunks created", flush=True)
                             return
 
+                        st.session_state.doc_intro = raw_text[:1500]
                         cache_key = get_cache_key(raw_text)
 
                         print("STEP P4: creating/loading vectorstore", flush=True)
