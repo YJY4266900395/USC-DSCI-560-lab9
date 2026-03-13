@@ -20,6 +20,31 @@ The system follows a typical **Retrieval-Augmented Generation pipeline**:
 
 ---
 
+# Running Instruction
+
+First install dependencies and download correct model:
+
+```bash
+pip install -r requirements.txt
+# adjust version of llama according to computer settings
+pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu129
+
+mkdir models
+curl -L -o models/llama-2-7b-chat.Q4_K_M.gguf "https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf"
+```
+
+Or download the model to /models from [this link](https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf) manually.
+
+Then running the corresponding version:
+```bash
+streamlit run app_open_source.py
+```
+Same command for other .py files. Browser window will be activated automatically.
+
+For OpenAI version: create a `.env` file in the same path of .py file and set `OPENAI_API_KEY=xxxxxxxxxxxxxx` (put the real api key here).
+
+---
+
 # Components
 
 ## 1. PDF Text Extraction

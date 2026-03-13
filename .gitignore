@@ -4,6 +4,12 @@ __pycache__/
 *$py.class
 .DS_Store
 
+# models is too big to upload
+models/
+
+# cache
+vector_cache/
+
 # C extensions
 *.so
 

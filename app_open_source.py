@@ -5,20 +5,18 @@ import streamlit as st
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.prompts import PromptTemplate
-from langchain.llms import LlamaCpp
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationalRetrievalChain
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_core.prompts import PromptTemplate
+from langchain_community.llms import LlamaCpp
 
 from htmlTemplates import css, bot_template, user_template
 
 
 CACHE_DIR = "vector_cache"
 MODEL_DIR = "models"
-MODEL_FILE = "llama-2-7b-chat.Q4_K_M.gguf"   # 或 llama-2-7b-chat.Q5_K_M.gguf
+MODEL_FILE = "llama-2-7b-chat.Q4_K_M.gguf"   # or llama-2-7b-chat.Q5_K_M.gguf
 TOP_K = 6
 
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -171,28 +169,23 @@ def get_conversation_chain(llm, vectorstore):
         ),
     )
 
-    print("STEP D2: creating conversation memory", flush=True)
-    memory = ConversationBufferMemory(
-        memory_key="chat_history",
-        return_messages=True,
-        output_key="answer"
+    retriever = vectorstore.as_retriever(
+        search_type="similarity",
+        search_kwargs={"k": TOP_K}
     )
 
-    print("STEP D3: creating ConversationalRetrievalChain", flush=True)
-    conversation_chain = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=vectorstore.as_retriever(
-            search_type="similarity",
-            search_kwargs={"k": TOP_K}
-        ),
-        memory=memory,
-        return_source_documents=True,
-        combine_docs_chain_kwargs={"prompt": qa_prompt},
-        verbose=False,
-    )
+    print("STEP D2: creating conversation chain (LCEL)", flush=True)
 
-    print("STEP D3 DONE: conversation chain ready", flush=True)
-    return conversation_chain
+    def chain(inputs):
+        question = inputs["question"]
+        docs = retriever.invoke(question)
+        context = "\n\n".join(doc.page_content for doc in docs)
+        prompt_text = qa_prompt.format(context=context, question=question)
+        answer = llm.invoke(prompt_text)
+        return {"answer": answer, "source_documents": docs}
+
+    print("STEP D2 DONE: conversation chain ready", flush=True)
+    return chain
 
 
 def is_general_chat_question(user_question):
@@ -258,7 +251,7 @@ def answer_general_question(llm, user_question, recent_history_text, answer_lang
         question=user_question,
         answer_language=answer_language
     )
-    return llm(final_prompt).strip()
+    return llm.invoke(final_prompt).strip()
 
 
 def get_answer_language(user_question):
