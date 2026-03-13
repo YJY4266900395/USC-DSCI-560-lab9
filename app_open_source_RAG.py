@@ -16,7 +16,7 @@ from htmlTemplates import css, bot_template, user_template
 
 CACHE_DIR = "vector_cache"
 MODEL_DIR = "models"
-MODEL_FILE = "llama-2-7b-chat.Q4_K_M.gguf"  # 或 llama-2-7b-chat.Q4_K_M.gguf
+MODEL_FILE = "llama-2-7b-chat.Q4_K_M.gguf"  # or llama-2-7b-chat.Q4_K_M.gguf
 TOP_K = 6
 
 os.makedirs(CACHE_DIR, exist_ok=True)
